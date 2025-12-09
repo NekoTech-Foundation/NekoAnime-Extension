@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "NekoHelper - Video Player Proxy",
+  "version": "1.0.0",
+  "description": "Bypasses CORS/403 for NekoAnime Player",
+  "permissions": [
+    "scripting",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["injected.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
