@@ -18,11 +18,17 @@ async function handleFetch(payload, sendResponse) {
     const { url, options } = payload;
     
     try {
-        // 1. Setup declarativeNetRequest rule to spoof Referer
+        // 1. Setup declarativeNetRequest rule
+        // We only override Referer/Origin if strictly needed or just trust the client provided headers?
+        // DNR is global for the browser, modifying it for every request might be race-condition prone if multiple requests happen.
+        // But for this use case (single user), it's probably OK.
+        
         const hostname = new URL(url).hostname;
-        const ruleId = 1; // Simple single rule for now
+        const ruleId = 1;
 
-        // Note: This requires 'declarativeNetRequest' permission in manifest.json
+        // Extract headers from options to see if we need to modify DNR
+        // Actually DNR is better for Referer/Origin than fetch headers often because of browser restrictions (Refused to set unsafe header).
+        
         await chrome.declarativeNetRequest.updateDynamicRules({
             removeRuleIds: [ruleId],
             addRules: [{
@@ -42,24 +48,39 @@ async function handleFetch(payload, sendResponse) {
             }]
         });
 
-        console.log("[Background] Fetching with DNR Rule:", url);
+        console.log("[Background] Fetching:", url, options);
         
         // 2. Perform the fetch
-        const response = await fetch(url, {
-             method: options.method || "GET"
-        });
+        // Prepare fetch options
+        const fetchOptions = {
+            method: options.method || "GET",
+            headers: options.headers || {},
+        };
+
+        if (options.body || options.data) {
+            fetchOptions.body = options.body || options.data;
+        }
+
+        const response = await fetch(url, fetchOptions);
 
         console.log("[Background] Response:", response.status);
 
-        // 3. Convert Blob to Base64
+        // 3. Read body
         const blob = await response.blob();
         const base64Data = await blobToBase64(blob);
+        
+        // Gather response headers
+        const responseHeaders = {};
+        for (const [key, value] of response.headers.entries()) {
+             responseHeaders[key] = value;
+        }
 
         sendResponse({
             success: true,
-            data: base64Data,
+            data: base64Data, // Always Base64
             url: response.url,
-            status: response.status
+            status: response.status,
+            headers: responseHeaders
         });
 
     } catch (error) {
