@@ -6,7 +6,8 @@
   "permissions": [
     "scripting",
     "declarativeNetRequest",
-    "declarativeNetRequestWithHostAccess"
+    "declarativeNetRequestWithHostAccess",
+    "cookies"
   ],
   "host_permissions": [
     "<all_urls>"

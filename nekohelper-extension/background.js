@@ -75,6 +75,21 @@ async function handleFetch(payload, sendResponse) {
              responseHeaders[key] = value;
         }
 
+        // 4. Capture Cookies (since fetch hides Set-Cookie)
+        try {
+            const cookies = await chrome.cookies.getAll({ url: url });
+            const cookieStr = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+            if (cookieStr) {
+                // Mimic Set-Cookie or just provide a consolidated cookie string
+                // The client looks for 'set-cookie' or just a raw string to parse.
+                // Note: Standard Set-Cookie is one header per cookie, but here we can just put all in one string
+                // because useAuthStore splits by ';' which matches our format.
+                responseHeaders['set-cookie'] = cookieStr;
+            }
+        } catch (cookieErr) {
+            console.warn("[Background] Cookie fetch failed:", cookieErr);
+        }
+
         sendResponse({
             success: true,
             data: base64Data, // Always Base64
